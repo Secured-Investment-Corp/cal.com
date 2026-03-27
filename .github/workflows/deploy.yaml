@@ -27,7 +27,7 @@ jobs:
 
       - name: Get the commit hash
         run: |
-          GIT_SHA=$(git rev-parse --short HEAD)
+          GIT_SHA="${GITHUB_SHA::7}"
           echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
           echo "GIT_SHA is set to $GIT_SHA"
 
