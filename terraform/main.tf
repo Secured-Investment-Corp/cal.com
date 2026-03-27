@@ -108,10 +108,15 @@ data "aws_acm_certificate" "calcom" {
   statuses = ["ISSUED"]
 }
 
-# Look up the existing HTTPS listener on the shared ALB (created by the sic-node terraform)
+# Look up the existing listeners on the shared ALB (created by the sic-node terraform)
 data "aws_lb_listener" "https" {
   load_balancer_arn = local.ecs_cluster_load_balancer_arn
   port              = 443
+}
+
+data "aws_lb_listener" "http" {
+  load_balancer_arn = local.ecs_cluster_load_balancer_arn
+  port              = 80
 }
 
 # Look up the existing IAM execution role (created by the sic-node terraform)
@@ -147,6 +152,34 @@ resource "aws_lb_target_group" "calcom" {
 
   tags = {
     Name = "calcom-ingress"
+  }
+}
+
+# Correct HTTP→HTTPS redirect for cal.cogonation.com (bypasses the typo in the shared default redirect)
+resource "aws_lb_listener_rule" "calcom_http_redirect" {
+  listener_arn = data.aws_lb_listener.http.arn
+  priority     = 10
+
+  action {
+    type = "redirect"
+    redirect {
+      host        = "#{host}"
+      port        = "443"
+      protocol    = "HTTPS"
+      path        = "/#{path}"
+      query       = "#{query}"
+      status_code = "HTTP_301"
+    }
+  }
+
+  condition {
+    host_header {
+      values = ["cal.cogonation.com"]
+    }
+  }
+
+  tags = {
+    Name = "calcom-http-redirect"
   }
 }
 
