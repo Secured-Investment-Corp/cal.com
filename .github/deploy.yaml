@@ -1,0 +1,57 @@
+name: Build and deploy cal.cogonation.com
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    uses: ./.github/build.yaml
+
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.6
+
+      - name: Get the commit hash
+        run: |
+          GIT_SHA=$(git rev-parse --short HEAD)
+          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
+          echo "GIT_SHA is set to $GIT_SHA"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ACTIONS_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: GitHubActions_sic-calcom_deploy
+
+      - name: Update image tag in SSM Parameter Store
+        run: |
+          aws ssm put-parameter --name /sic/calcom/prod/image-tag --value ${GIT_SHA} --overwrite
+
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config key=${{ vars.TF_STATE_KEY }}
+        working-directory: terraform
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -var environment=prod
+        working-directory: terraform
+
+      - name: Terraform apply
+        id: apply
+        run: terraform apply -var environment=prod -auto-approve
+        working-directory: terraform
