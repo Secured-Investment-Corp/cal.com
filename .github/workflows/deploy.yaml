@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    uses: ./.github/build.yaml
+    uses: ./.github/workflows/build.yaml
 
   deploy:
     runs-on: ubuntu-latest
