@@ -42,7 +42,7 @@ jobs:
         run: |
           docker build \
             --platform linux/amd64 \
-            --build-arg DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --build-arg DATABASE_URL="postgresql://postgres:postgres@localhost:5432/calcom" \
             --build-arg NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
             --build-arg CALENDSO_ENCRYPTION_KEY="${{ secrets.CALENDSO_ENCRYPTION_KEY }}" \
             --build-arg NEXT_PUBLIC_WEBAPP_URL="https://cal.cogonation.com" \
