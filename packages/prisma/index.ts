@@ -17,7 +17,10 @@ const pool =
       })
     : undefined;
 
-const adapter = pool ? new PrismaPg(pool) : new PrismaPg({ connectionString });
+// AWS RDS uses its own CA not trusted by Node.js by default.
+// rejectUnauthorized: false keeps the connection encrypted but skips cert chain verification.
+const sslOptions = connectionString.includes("sslmode=require") ? { ssl: { rejectUnauthorized: false } } : undefined;
+const adapter = pool ? new PrismaPg(pool) : new PrismaPg({ connectionString, ...sslOptions });
 const prismaOptions: Prisma.PrismaClientOptions = {
   adapter,
 };
